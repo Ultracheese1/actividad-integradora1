@@ -233,7 +233,9 @@ int main() {
             int pos = -1;
             bool found = KMP_search(transmissions[i], mcodes[j], pos);
             if (found)
-                cout << "true " << pos << " " << mcodes[j] << "\n";
+                // cout << "true " << pos << " " << mcodes[j] << "\n";
+                cout << "true " << pos << "\n";
+
             else
                 cout << "false\n";
         }
