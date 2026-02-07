@@ -141,14 +141,14 @@ pair<int, int> longestCommonSubstring(const string &t1, const string &t2) {
 
 
 // ----------------------------------- Parte 4 -----------------------------------
-// Huffman Coding (CORREGIDO)
+// Huffman Coding
 
 struct HuffmanNode {
     char ch;
-    long long freq;
+    int freq;
     HuffmanNode *left, *right;
 
-    HuffmanNode(char c, long long f) : ch(c), freq(f), left(nullptr), right(nullptr) {}
+    HuffmanNode(char c, int f) : ch(c), freq(f), left(nullptr), right(nullptr) {}
     HuffmanNode(HuffmanNode* l, HuffmanNode* r)
         : ch('\0'), freq(l->freq + r->freq), left(l), right(r) {}
 };
@@ -161,18 +161,13 @@ struct Compare {
 
 // construir el árbol de Huffman
 HuffmanNode* buildHuffmanTree(const string &text) {
-    unordered_map<char, long long> freq;
+    unordered_map<char, int> freq;
     for (char c : text)
         freq[c]++;
 
     priority_queue<HuffmanNode*, vector<HuffmanNode*>, Compare> pq;
     for (auto &p : freq)
         pq.push(new HuffmanNode(p.first, p.second));
-
-    // caso especial: solo un símbolo
-    if (pq.size() == 1) {
-        pq.push(new HuffmanNode('\0', 0));
-    }
 
     while (pq.size() > 1) {
         HuffmanNode* a = pq.top(); pq.pop();
@@ -183,13 +178,12 @@ HuffmanNode* buildHuffmanTree(const string &text) {
     return pq.top();
 }
 
-// obtener longitudes de códigos
+// obtener longitudes de códigos de Huffman
 void getCodeLengths(HuffmanNode* node, int depth,
                     unordered_map<char, int> &lengths) {
     if (!node) return;
 
     if (!node->left && !node->right) {
-        if (depth == 0) depth = 1; // CORRECCIÓN
         lengths[node->ch] = depth;
         return;
     }
@@ -198,18 +192,10 @@ void getCodeLengths(HuffmanNode* node, int depth,
     getCodeLengths(node->right, depth + 1, lengths);
 }
 
-// liberar memoria
-void freeTree(HuffmanNode* node) {
-    if (!node) return;
-    freeTree(node->left);
-    freeTree(node->right);
-    delete node;
-}
-
 // longitud promedio esperada
-double averageCodeLength(const unordered_map<char,long long> &freq,
+double averageCodeLength(const unordered_map<char,int> &freq,
                           const unordered_map<char,int> &lengths,
-                          long long total) {
+                          int total) {
     double avg = 0.0;
     for (auto &p : freq) {
         double prob = (double)p.second / total;
@@ -218,20 +204,21 @@ double averageCodeLength(const unordered_map<char,long long> &freq,
     return avg;
 }
 
-// longitud codificada
-long long encodedLength(const string &s,
-                         const unordered_map<char,int> &lengths) {
-    long long total = 0;
+// longitud codificada de cualquier string
+int encodedLength(const string &s,
+                  const unordered_map<char,int> &lengths) {
+    int total = 0;
     for (char c : s)
         total += lengths.at(c);
     return total;
 }
 
+
 // ----------------------------------- Main -----------------------------------
 int main() {
     string t1 = readFile("transmission1.txt");
     string t2 = readFile("transmission2.txt");
-
+    
     vector<string> mcodes = {
         readFile("mcode1.txt"),
         readFile("mcode2.txt"),
@@ -265,11 +252,13 @@ int main() {
     pair<int, int> res = longestCommonSubstring(t1, t2);
     cout << res.first << " " << res.second << endl;
 
-    // Parte 4 – Huffman (CORREGIDA)
-    const double FACTOR = 1.3;
+    // Parte 4 – Huffman
 
-    for (const string &t : transmissions) {
-        unordered_map<char,long long> freq;
+    for (int i = 0; i < 2; i++) {
+        const string &t = transmissions[i];
+
+        // frecuencias
+        unordered_map<char,int> freq;
         for (char c : t) freq[c]++;
 
         HuffmanNode* root = buildHuffmanTree(t);
@@ -280,16 +269,14 @@ int main() {
         double avgLen = averageCodeLength(freq, lengths, t.size());
 
         for (const string &mcode : mcodes) {
-            long long realLen = encodedLength(mcode, lengths);
-            double bitsPorSimbolo = (double)realLen / mcode.size();
+            int realLen = encodedLength(mcode, lengths);
+            double expected = avgLen * mcode.size();
 
-            if (bitsPorSimbolo > avgLen * FACTOR)
+            if (realLen > expected * 1.5)
                 cout << "sospechoso " << realLen << "\n";
             else
                 cout << "no-sospechoso " << realLen << "\n";
         }
-
-        freeTree(root);
     }
 
     return 0;
